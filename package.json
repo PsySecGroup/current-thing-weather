@@ -1,0 +1,46 @@
+{
+  "name": "@psysecgroup/current-thing-weather",
+  "description": "Detects the Current Thing before it becomes the Current Thing.",
+  "version": "1.0.0",
+  "author": "The PsySec Group",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/PsySecGroup/current-thing-weather/issues"
+  },
+  "homepage": "https://github.com/PsySecGroup/current-thing-weather#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PsySecGroup/current-thing-weather.git"
+  },
+  "scripts": {
+    "start": "node -r source-map-support/register dist/index.js",
+    "dev": "echo 'Type \"npm run sb-watch\" to get started'",
+    "build": "tsup-node --legacy-output --dts --minify --format esm,cjs,iife",
+    "sb-watch": "nodemon --watch src/ -e ts,tsx,js --exec \"tsup-node --dts --onSuccess 'node -r source-map-support/register dist/index.js'\"",
+    "watch": "tsup-node --watch --dts --onSuccess 'node -r source-map-support/register dist/index.js'",
+    "test": "nodemon --watch tests/ --watch src/ -e ts,tsx,js --exec \"tsup-node --entry.tests=tests/index.ts --onSuccess 'uvu -r source-map-support/register dist ^tests.js$'\""
+  },
+  "tsup": {
+    "entry": ["src/index.ts"],
+    "splitting": false,
+    "sourcemap": true,
+    "clean": false,
+    "dts": false
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["/dist"],
+  "devDependencies": {
+    "@types/node": "^17.0.41",
+    "nodemon": "^2.0.16",
+    "source-map-support": "^0.5.21",
+    "tsup": "^6.1.0",
+    "typescript": "^4.7.3",
+    "uvu": "^0.5.3"
+  },
+  "dependencies": {
+    "commander": "^9.3.0",
+    "ts-node": "^10.8.1"
+  }
+}
