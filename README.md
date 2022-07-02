@@ -6,7 +6,7 @@ Detects the Current Thing before it becomes the Current Thing.
 
 [![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/PsySecGroup/current-thing-weather)
 
-`npm i -S @psysecgroup/typescript-server-template` or `yarn add @psysecgroup/typescript-server-template`
+`npm i -S @psysecgroup/current-thing-weather` or `yarn add @psysecgroup/current-thing-weather`
 
 ## Testing
 
