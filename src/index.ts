@@ -1,12 +1,17 @@
 // import { Command } from 'commander'
-import { writeFileSync, createReadStream } from 'fs'
+import { createReadStream } from 'fs'
 import unzipper from 'unzipper'
 import csv from 'csv-parser'
+import { workerCount, startWriters, enqueue } from '@psysecgroup/threaded-sqlite-write'
 
 const isBadPart = /\d/
+const singleQuoteRegex = /'/g
 const plusRegex = /\+|_/g
 const minusRegex = /-/g
-const headers = ['GLOBALEVENTID', 'SQLDATE', 'MonthYear', 'Year', 'FractionDate', 'Actor1Code', 'Actor1Name', 'Actor1CountryCode', 'Actor1KnownGroupCode', 'Actor1EthnicCode', 'Actor1Religion1Code', 'Actor1Religion2Code', 'Actor1Type1Code', 'Actor1Type2Code', 'Actor1Type3Code', 'Actor2Code', 'Actor2Name', 'Actor2CountryCode', 'Actor2KnownGroupCode', 'Actor2EthnicCode', 'Actor2Religion1Code', 'Actor2Religion2Code', 'Actor2Type1Code', 'Actor2Type2Code', 'Actor2Type3Code', 'IsRootEvent', 'EventCode', 'EventBaseCode', 'EventRootCode', 'QuadClass', 'GoldsteinScale', 'NumMentions', 'NumSources', 'NumArticles', 'AvgTone', 'Actor1Geo_Type', 'Actor1Geo_FullName', 'Actor1Geo_CountryCode', 'Actor1Geo_ADM1Code', 'Actor1Geo_Lat', 'Actor1Geo_Long', 'Actor1Geo_FeatureID', 'Actor2Geo_Type', 'Actor2Geo_FullName', 'Actor2Geo_CountryCode', 'Actor2Geo_ADM1Code', 'Actor2Geo_Lat', 'Actor2Geo_Long', 'Actor2Geo_FeatureID', 'ActionGeo_Type', 'ActionGeo_FullName', 'ActionGeo_CountryCode', 'ActionGeo_ADM1Code', 'ActionGeo_Lat', 'ActionGeo_Long', 'ActionGeo_FeatureID', 'DATEADDED', 'SOURCEURL']
+const csvConfig = {
+  separator: '\t',
+  headers: ['GLOBALEVENTID', 'SQLDATE', 'MonthYear', 'Year', 'FractionDate', 'Actor1Code', 'Actor1Name', 'Actor1CountryCode', 'Actor1KnownGroupCode', 'Actor1EthnicCode', 'Actor1Religion1Code', 'Actor1Religion2Code', 'Actor1Type1Code', 'Actor1Type2Code', 'Actor1Type3Code', 'Actor2Code', 'Actor2Name', 'Actor2CountryCode', 'Actor2KnownGroupCode', 'Actor2EthnicCode', 'Actor2Religion1Code', 'Actor2Religion2Code', 'Actor2Type1Code', 'Actor2Type2Code', 'Actor2Type3Code', 'IsRootEvent', 'EventCode', 'EventBaseCode', 'EventRootCode', 'QuadClass', 'GoldsteinScale', 'NumMentions', 'NumSources', 'NumArticles', 'AvgTone', 'Actor1Geo_Type', 'Actor1Geo_FullName', 'Actor1Geo_CountryCode', 'Actor1Geo_ADM1Code', 'Actor1Geo_Lat', 'Actor1Geo_Long', 'Actor1Geo_FeatureID', 'Actor2Geo_Type', 'Actor2Geo_FullName', 'Actor2Geo_CountryCode', 'Actor2Geo_ADM1Code', 'Actor2Geo_Lat', 'Actor2Geo_Long', 'Actor2Geo_FeatureID', 'ActionGeo_Type', 'ActionGeo_FullName', 'ActionGeo_CountryCode', 'ActionGeo_ADM1Code', 'ActionGeo_Lat', 'ActionGeo_Long', 'ActionGeo_FeatureID', 'DATEADDED', 'SOURCEURL']
+}
 
 /**
  *
@@ -20,8 +25,7 @@ async function extractAndProcessZip (zipFilePath) {
 
   for await (const entry of zipStream) {
     const fileName = entry.path.toLowerCase()
-    const type = entry.type; // 'Directory' or 'File'
-    // const size = entry.vars.uncompressedSize; // There is also compressedSize;
+    const type = entry.type // 'Directory' or 'File'
 
     if (type === 'File' && fileName.endsWith('.csv')) {
       const csvResults = await processCsv(entry)
@@ -31,7 +35,7 @@ async function extractAndProcessZip (zipFilePath) {
     }
   }
 
-  return results;
+  return results
 }
 
 /**
@@ -57,27 +61,43 @@ function addEntities (str, array) {
  */
 function processCsv (csvStream) {
   return new Promise((resolve, reject) => {
-    const csvResults = [];
+    const urls = {}
+
     csvStream
-      .pipe(csv({
-        separator: '\t',
-        headers
-      }))
+      .pipe(csv(csvConfig))
       .on('data', (data) => { 
-        // const values = Object
-        let entities = addEntities(data.Actor1Geo_FullName, [])
-        entities = addEntities(data.Actor2Geo_FullName, entities)
-        entities = addEntities(data.Actor1Name, entities)
-        entities = addEntities(data.Actor2Name, entities)
+        if (urls[data.SOURCEURL] === undefined) {
+          urls[data.SOURCEURL] = {
+            year: parseInt(data.Year),
+            month: parseInt(data.MonthYear.substring(4)),
+            day: parseInt(data.SQLDATE.substring(6)),
+            conflict: 0,
+            events: 0,
+            tone: parseFloat(data.AvgTone),
+            domain: '',
+            url: data.SOURCEURL.replace(singleQuoteRegex, "''"),
+            summary: '',
+            entities: []          
+          }
+        }
+
+        const source = urls[data.SOURCEURL]
+
+        source.entities = addEntities(data.Actor1Geo_FullName, source.entities)
+        source.entities = addEntities(data.Actor2Geo_FullName, source.entities)
+        source.entities = addEntities(data.Actor1Name, source.entities)
+        source.entities = addEntities(data.Actor2Name, source.entities)
+        source.entities = addEntities(data.ActionGeo_FullName, source.entities)
 
         const urlParts = data.SOURCEURL
           .toLowerCase()
           .replace(plusRegex, '-')
           .split('/')
-        
-        const domain = urlParts[2]
+
+        source.domain = urlParts[2].replace('www.', '').replace(singleQuoteRegex, "''")
 
         let summary = ''
+
         for (const part of urlParts) {
           if (part.length > summary.length && part.indexOf('?') === -1 && part.indexOf('-') > -1) {
             summary = part
@@ -120,62 +140,101 @@ function processCsv (csvStream) {
             }
           }
 
-          summary = newSummary.join(' ')
+          summary = newSummary.join(' ').replace(singleQuoteRegex, "''")
         }
 
-        const event = {
-          isRoot: parseInt(data.IsRootEvent),
-          year: parseInt(data.Year),
-          month: parseInt(data.MonthYear.substring(4)),
-          day: parseInt(data.SQLDATE.substring(6)),
-          quad: parseInt(data.QuadClass),
-          goldstein: parseInt(data.GoldsteinScale),
-          mentions: parseInt(data.NumMentions),
-          sources: parseInt(data.NumSources),
-          articles: parseInt(data.NumArticles),
-          tone: parseFloat(data.AvgTone),
-          domain,
-          url: data.SOURCEURL,
-          summary,
-          entities
+        source.summary = summary
+
+        switch (data.QuadClass) {
+          case '2':
+            source.conflict += 0
+            break
+          case '1':
+            source.conflict += 25
+            break
+          case '3':
+            source.conflict += 50
+            break
+          case '4':
+            source.conflict += 75
+            break
         }
-        
-        csvResults.push(event)
+
+        source.events += 1
+        source.conflict += parseInt(data.GoldsteinScale) * -1
       })
-      .on('end', () => resolve(csvResults))
-      .on('error', (error) => reject(error));
-  });
+      .on('end', () => {
+        const results = Object.values(urls)
+
+        results.map(result => {
+          result.entities = result.entities.join(',').replace(singleQuoteRegex, "''")
+          return result
+        })
+
+        resolve(results)
+      })
+      .on('error', (error) => reject(error))
+  })
 }
 
 /**
  *
  */
 async function main () {
-  const zipFilePath = 'data/20240512.export.CSV.zip';
+  const zipFilePath = 'data/20240512.export.CSV.zip'
   const results = await extractAndProcessZip(zipFilePath)
-  writeFileSync('output.json', JSON.stringify(results, null, 2))
+
+  const rows = []
+  let i = 0
+
+  for (const result of results) {
+    const index = i % workerCount
+
+    if (rows[index] === undefined) {
+      rows[index] = []
+    }
+
+    rows[index].push(result)
+
+    i += 1
+  }
+
+  for (const row of rows) {
+    enqueue(row)
+  }
+
+  await startWriters(
+    // Directory to save the sqlite databases
+    'data',
+
+    // The name of the sqlite databases
+    '20240512',
+
+    // The CREATE TABLE sql for the table to populate (Must be CREATE TABLE IF NOT EXISTS)
+    'CREATE TABLE IF NOT EXISTS events (year INTEGER, month INTEGER, day INTEGER, conflict INTEGER, events INTEGER, tone REAL, domain TEXT, url TEXT, summary TEXT, entities TEXT);',
+
+    // The function that converts enqueue() arrays of data into a semicolon-separated string of SQL INSERTs.
+    function (data) {
+      let query = '';
+
+      for (const item of data) {
+        const year = item.year
+        const month = item.month
+        const day = item.day
+        const conflict = item.conflict
+        const events = item.events
+        const tone = item.tone
+        const domain = item.domain
+        const url = item.url
+        const summary = item.summary
+        const entities = item.entities
+
+        query += `INSERT INTO events (year, month, day, conflict, events, tone, domain, url, summary, entities) VALUES ('${year}, ${month}, ${day}, ${conflict}, ${events}, ${tone}, ${domain}, ${url}, ${summary}, ${entities}');`
+      }
+
+      return query
+    }
+  )
 }
 
 main()
-
-/**
- * Get tweets piped in from a CURL query
- * Split words and strip stop words
- * Extract domains
- * Extact times
- * Extract username
- * INSERT username TO users IF NOT UNIQUE
- * INSERT tweetId, users.id, timestamp TO tweetIds IF NOT UNIQUE
- * INSERT word, tweetId.id TO words
- *   IF (word, tweetId.id) EXISTS
- *     iterate counter by 1
- *   ELSE
- *     set counter to 1
- * INSERT domain, tweetId.id TO domains
- *   IF (domain, tweetId.id) EXISTS
- *     iterate counter by 1
- *   ELSE
- *     set counter to 1
- * Run queries to generate report
- * Create a report image
- */

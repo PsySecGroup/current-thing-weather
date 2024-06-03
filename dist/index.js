@@ -1,2 +1,195 @@
-var _=Object.create;var C=Object.defineProperty;var h=Object.getOwnPropertyDescriptor;var R=Object.getOwnPropertyNames;var E=Object.getPrototypeOf,N=Object.prototype.hasOwnProperty;var L=(t,o,s,n)=>{if(o&&typeof o=="object"||typeof o=="function")for(let e of R(o))!N.call(t,e)&&e!==s&&C(t,e,{get:()=>o[e],enumerable:!(n=h(o,e))||n.enumerable});return t};var m=(t,o,s)=>(s=t!=null?_(E(t)):{},L(o||!t||!t.__esModule?C(s,"default",{value:t,enumerable:!0}):s,t));var p=require("fs"),f=m(require("unzipper")),G=m(require("csv-parser")),S=/\d/,I=/\+|_/g,d=/-/g,T=["GLOBALEVENTID","SQLDATE","MonthYear","Year","FractionDate","Actor1Code","Actor1Name","Actor1CountryCode","Actor1KnownGroupCode","Actor1EthnicCode","Actor1Religion1Code","Actor1Religion2Code","Actor1Type1Code","Actor1Type2Code","Actor1Type3Code","Actor2Code","Actor2Name","Actor2CountryCode","Actor2KnownGroupCode","Actor2EthnicCode","Actor2Religion1Code","Actor2Religion2Code","Actor2Type1Code","Actor2Type2Code","Actor2Type3Code","IsRootEvent","EventCode","EventBaseCode","EventRootCode","QuadClass","GoldsteinScale","NumMentions","NumSources","NumArticles","AvgTone","Actor1Geo_Type","Actor1Geo_FullName","Actor1Geo_CountryCode","Actor1Geo_ADM1Code","Actor1Geo_Lat","Actor1Geo_Long","Actor1Geo_FeatureID","Actor2Geo_Type","Actor2Geo_FullName","Actor2Geo_CountryCode","Actor2Geo_ADM1Code","Actor2Geo_Lat","Actor2Geo_Long","Actor2Geo_FeatureID","ActionGeo_Type","ActionGeo_FullName","ActionGeo_CountryCode","ActionGeo_ADM1Code","ActionGeo_Lat","ActionGeo_Long","ActionGeo_FeatureID","DATEADDED","SOURCEURL"];async function D(t){let o=[],s=(0,p.createReadStream)(t).pipe(f.default.Parse({forceStream:!0}));for await(let n of s){let e=n.path.toLowerCase();if(n.type==="File"&&e.endsWith(".csv")){let l=await F(n);o.push(...l)}else n.autodrain()}return o}function a(t,o){return t.length>0&&t.toLowerCase().split(",").forEach(s=>{let n=s.trim();o.indexOf(n)===-1&&o.push(n)}),o}function F(t){return new Promise((o,s)=>{let n=[];t.pipe((0,G.default)({separator:"	",headers:T})).on("data",e=>{let c=a(e.Actor1Geo_FullName,[]);c=a(e.Actor2Geo_FullName,c),c=a(e.Actor1Name,c),c=a(e.Actor2Name,c);let l=e.SOURCEURL.toLowerCase().replace(I,"-").split("/"),g=l[2],u="";for(let i of l)i.length>u.length&&i.indexOf("?")===-1&&i.indexOf("-")>-1&&(u=i);if(u=u.replace(".html","").replace(".htm","").replace(d," ").trim(),u===""){let i=[];for(let r of l.slice(3)){if(r.length<=1||r==="*")continue;let A=r.indexOf("?");A>-1&&(r=r.substring(0,A)),A=r.indexOf("."),A>-1&&(r=r.substring(0,A)),r.length!==0&&S.test(r)===!1&&i.indexOf(r)===-1&&i.push(r.replace(d," "))}u=i.join(" ")}let y={isRoot:parseInt(e.IsRootEvent),year:parseInt(e.Year),month:parseInt(e.MonthYear.substring(4)),day:parseInt(e.SQLDATE.substring(6)),quad:parseInt(e.QuadClass),goldstein:parseInt(e.GoldsteinScale),mentions:parseInt(e.NumMentions),sources:parseInt(e.NumSources),articles:parseInt(e.NumArticles),tone:parseFloat(e.AvgTone),domain:g,url:e.SOURCEURL,summary:u,entities:c};n.push(y)}).on("end",()=>o(n)).on("error",e=>s(e))})}async function v(){let o=await D("data/20240512.export.CSV.zip");(0,p.writeFileSync)("output.json",JSON.stringify(o,null,2))}v();
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+
+// src/index.ts
+var import_fs = require("fs");
+var import_unzipper = __toESM(require("unzipper"));
+var import_csv_parser = __toESM(require("csv-parser"));
+var import_threaded_sqlite_write = require("@psysecgroup/threaded-sqlite-write");
+var isBadPart = /\d/;
+var singleQuoteRegex = /'/g;
+var plusRegex = /\+|_/g;
+var minusRegex = /-/g;
+var csvConfig = {
+  separator: "	",
+  headers: ["GLOBALEVENTID", "SQLDATE", "MonthYear", "Year", "FractionDate", "Actor1Code", "Actor1Name", "Actor1CountryCode", "Actor1KnownGroupCode", "Actor1EthnicCode", "Actor1Religion1Code", "Actor1Religion2Code", "Actor1Type1Code", "Actor1Type2Code", "Actor1Type3Code", "Actor2Code", "Actor2Name", "Actor2CountryCode", "Actor2KnownGroupCode", "Actor2EthnicCode", "Actor2Religion1Code", "Actor2Religion2Code", "Actor2Type1Code", "Actor2Type2Code", "Actor2Type3Code", "IsRootEvent", "EventCode", "EventBaseCode", "EventRootCode", "QuadClass", "GoldsteinScale", "NumMentions", "NumSources", "NumArticles", "AvgTone", "Actor1Geo_Type", "Actor1Geo_FullName", "Actor1Geo_CountryCode", "Actor1Geo_ADM1Code", "Actor1Geo_Lat", "Actor1Geo_Long", "Actor1Geo_FeatureID", "Actor2Geo_Type", "Actor2Geo_FullName", "Actor2Geo_CountryCode", "Actor2Geo_ADM1Code", "Actor2Geo_Lat", "Actor2Geo_Long", "Actor2Geo_FeatureID", "ActionGeo_Type", "ActionGeo_FullName", "ActionGeo_CountryCode", "ActionGeo_ADM1Code", "ActionGeo_Lat", "ActionGeo_Long", "ActionGeo_FeatureID", "DATEADDED", "SOURCEURL"]
+};
+async function extractAndProcessZip(zipFilePath) {
+  const results = [];
+  const zipStream = (0, import_fs.createReadStream)(zipFilePath).pipe(import_unzipper.default.Parse({ forceStream: true }));
+  for await (const entry of zipStream) {
+    const fileName = entry.path.toLowerCase();
+    const type = entry.type;
+    if (type === "File" && fileName.endsWith(".csv")) {
+      const csvResults = await processCsv(entry);
+      results.push(...csvResults);
+    } else {
+      entry.autodrain();
+    }
+  }
+  return results;
+}
+function addEntities(str, array) {
+  if (str.length > 0) {
+    str.toLowerCase().split(",").forEach((entity) => {
+      const trimmed = entity.trim();
+      if (array.indexOf(trimmed) === -1) {
+        array.push(trimmed);
+      }
+    });
+  }
+  return array;
+}
+function processCsv(csvStream) {
+  return new Promise((resolve, reject) => {
+    const urls = {};
+    csvStream.pipe((0, import_csv_parser.default)(csvConfig)).on("data", (data) => {
+      if (urls[data.SOURCEURL] === void 0) {
+        urls[data.SOURCEURL] = {
+          year: parseInt(data.Year),
+          month: parseInt(data.MonthYear.substring(4)),
+          day: parseInt(data.SQLDATE.substring(6)),
+          conflict: 0,
+          events: 0,
+          tone: parseFloat(data.AvgTone),
+          domain: "",
+          url: data.SOURCEURL.replace(singleQuoteRegex, "''"),
+          summary: "",
+          entities: []
+        };
+      }
+      const source = urls[data.SOURCEURL];
+      source.entities = addEntities(data.Actor1Geo_FullName, source.entities);
+      source.entities = addEntities(data.Actor2Geo_FullName, source.entities);
+      source.entities = addEntities(data.Actor1Name, source.entities);
+      source.entities = addEntities(data.Actor2Name, source.entities);
+      source.entities = addEntities(data.ActionGeo_FullName, source.entities);
+      const urlParts = data.SOURCEURL.toLowerCase().replace(plusRegex, "-").split("/");
+      source.domain = urlParts[2].replace("www.", "").replace(singleQuoteRegex, "''");
+      let summary = "";
+      for (const part of urlParts) {
+        if (part.length > summary.length && part.indexOf("?") === -1 && part.indexOf("-") > -1) {
+          summary = part;
+        }
+      }
+      summary = summary.replace(".html", "").replace(".htm", "").replace(minusRegex, " ").trim();
+      if (summary === "") {
+        const newSummary = [];
+        for (let part of urlParts.slice(3)) {
+          if (part.length <= 1 || part === "*") {
+            continue;
+          }
+          let index = part.indexOf("?");
+          if (index > -1) {
+            part = part.substring(0, index);
+          }
+          index = part.indexOf(".");
+          if (index > -1) {
+            part = part.substring(0, index);
+          }
+          if (part.length === 0) {
+            continue;
+          }
+          if (isBadPart.test(part) === false) {
+            if (newSummary.indexOf(part) === -1) {
+              newSummary.push(part.replace(minusRegex, " "));
+            }
+          }
+        }
+        summary = newSummary.join(" ").replace(singleQuoteRegex, "''");
+      }
+      source.summary = summary;
+      switch (data.QuadClass) {
+        case "2":
+          source.conflict += 0;
+          break;
+        case "1":
+          source.conflict += 25;
+          break;
+        case "3":
+          source.conflict += 50;
+          break;
+        case "4":
+          source.conflict += 75;
+          break;
+      }
+      source.events += 1;
+      source.conflict += parseInt(data.GoldsteinScale) * -1;
+    }).on("end", () => {
+      const results = Object.values(urls);
+      results.map((result) => {
+        result.entities = result.entities.join(",").replace(singleQuoteRegex, "''");
+        return result;
+      });
+      resolve(results);
+    }).on("error", (error) => reject(error));
+  });
+}
+async function main() {
+  const zipFilePath = "data/20240512.export.CSV.zip";
+  const results = await extractAndProcessZip(zipFilePath);
+  const rows = [];
+  let i = 0;
+  for (const result of results) {
+    const index = i % import_threaded_sqlite_write.workerCount;
+    if (rows[index] === void 0) {
+      rows[index] = [];
+    }
+    rows[index].push(result);
+    i += 1;
+  }
+  for (const row of rows) {
+    (0, import_threaded_sqlite_write.enqueue)(row);
+  }
+  await (0, import_threaded_sqlite_write.startWriters)(
+    // Directory to save the sqlite databases
+    "data",
+    // The name of the sqlite databases
+    "20240512",
+    // The CREATE TABLE sql for the table to populate (Must be CREATE TABLE IF NOT EXISTS)
+    "CREATE TABLE IF NOT EXISTS events (year INTEGER, month INTEGER, day INTEGER, conflict INTEGER, events INTEGER, tone REAL, domain TEXT, url TEXT, summary TEXT, entities TEXT);",
+    // The function that converts enqueue() arrays of data into a semicolon-separated string of SQL INSERTs.
+    function(data) {
+      let query = "";
+      for (const item of data) {
+        const year = item.year;
+        const month = item.month;
+        const day = item.day;
+        const conflict = item.conflict;
+        const events = item.events;
+        const tone = item.tone;
+        const domain = item.domain;
+        const url = item.url;
+        const summary = item.summary;
+        const entities = item.entities;
+        query += `INSERT INTO events (year, month, day, conflict, events, tone, domain, url, summary, entities) VALUES ('${year}, ${month}, ${day}, ${conflict}, ${events}, ${tone}, ${domain}, ${url}, ${summary}, ${entities}');`;
+      }
+      return query;
+    },
+    // If set to true, all created databases will be merged into one single database with every record (default)
+    // If set to false, a SQLite file will exist for each core your CPU has
+    true
+  );
+}
+main();
 //# sourceMappingURL=index.js.map

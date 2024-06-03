@@ -40,5 +40,4 @@ Add your tests to the [`tests`](tests) folder, then import them in the [`tests/i
 
 * `tsup-node` is sketchy, find another way to compile TypeScript
 * Get all zip files in the `data` folder
-* Add all entries to a SQLite database
-* Load each event into an object by URL, and check to see if GPS events differ then attach
+* Confirm threaded-sqlite-write is working
