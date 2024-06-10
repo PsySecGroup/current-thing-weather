@@ -13,40 +13,28 @@
     "url": "git+https://github.com/PsySecGroup/current-thing-weather.git"
   },
   "scripts": {
-    "start": "node -r source-map-support/register dist/index.js",
-    "dev": "echo 'Type \"npm run sb-watch\" to get started'",
-    "build": "tsup-node --legacy-output --dts --minify --format esm,cjs,iife",
-    "sb-watch": "nodemon --watch src/ -e ts,tsx,js --exec \"tsup-node --dts --onSuccess 'node -r source-map-support/register dist/index.js'\"",
-    "watch": "tsup-node --watch --dts --onSuccess 'node -r source-map-support/register dist/index.js'",
-    "test": "nodemon --watch tests/ --watch src/ -e ts,tsx,js --exec \"tsup-node --entry.tests=tests/index.ts --onSuccess 'uvu -r source-map-support/register dist ^tests.js$'\""
-  },
-  "tsup": {
-    "entry": [
-      "src/index.ts"
-    ],
-    "splitting": false,
-    "sourcemap": true,
-    "clean": false,
-    "dts": false
+    "dev": "npx tsx watch src/index.ts",
+    "lint": "npx tsc --noEmit && npx eslint src/index.ts",
+    "test": "npx uvu -r esbuild-register tests/",
+    "build": "npx esbuild src/index.ts --bundle --platform=node --minify --outfile=dist/index.js",
+    "compile": "npm run lint && npm run test && npm run build"
   },
   "main": "./dist/index.js",
-  "module": "./dist/esm/index.js",
-  "types": "./dist/index.d.ts",
+  "module": "./dist/index.js",
+  "types": "./src/index.d.ts",
   "files": [
     "/dist"
   ],
   "devDependencies": {
-    "@eslint/js": "^9.4.0",
-    "@types/node": "^17.0.41",
+    "@types/node": "^20.14.1",
+    "esbuild": "^0.21.4",
+    "esbuild-register": "^3.5.0",
     "eslint": "9.x",
     "globals": "^15.3.0",
-    "nodemon": "^2.0.16",
-    "source-map-support": "^0.5.21",
-    "ts-node": "^10.8.1",
-    "tsup": "^6.1.0",
-    "typescript": "^4.7.3",
-    "typescript-eslint": "^7.11.0",
-    "uvu": "^0.5.3"
+    "tsx": "^4.11.2",
+    "typescript": "^5.4.5",
+    "typescript-eslint": "^7.12.0",
+    "uvu": "^0.5.6"
   },
   "dependencies": {
     "@psysecgroup/threaded-sqlite-write": "https://github.com/psysecgroup/threaded-sqlite-write",

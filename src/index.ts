@@ -229,11 +229,13 @@ async function main () {
         const summary = item.summary
         const entities = item.entities
 
-        query += `INSERT INTO events (year, month, day, conflict, events, tone, domain, url, summary, entities) VALUES ('${year}, ${month}, ${day}, ${conflict}, ${events}, ${tone}, ${domain}, ${url}, ${summary}, ${entities}');`
+        query += `INSERT INTO events (year, month, day, conflict, events, tone, domain, url, summary, entities) VALUES (${year}, ${month}, ${day}, ${conflict}, ${events}, ${tone}, '${domain}', '${url}', '${summary}', '${entities}');`
       }
 
       return query
-    }
+    },
+
+    true
   )
 }
 
