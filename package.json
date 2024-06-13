@@ -13,10 +13,11 @@
     "url": "git+https://github.com/PsySecGroup/current-thing-weather.git"
   },
   "scripts": {
+    "start": "node dist/index.js",
     "dev": "npx tsx watch src/index.ts",
     "lint": "npx tsc --noEmit && npx eslint src/index.ts",
     "test": "npx uvu -r esbuild-register tests/",
-    "build": "npx esbuild src/index.ts --bundle --platform=node --minify --outfile=dist/index.js",
+    "build": "npx esbuild src/index.ts --bundle --platform=node --minify --outfile=dist/index.js && cp node_modules/@psysecgroup/threaded-sqlite-write/dist/insert.js dist/insert.js",
     "compile": "npm run lint && npm run test && npm run build"
   },
   "main": "./dist/index.js",
@@ -39,6 +40,7 @@
   "dependencies": {
     "@psysecgroup/threaded-sqlite-write": "https://github.com/psysecgroup/threaded-sqlite-write",
     "csv-parser": "^3.0.0",
+    "dotenv": "^16.4.5",
     "unzipper": "^0.11.6"
   }
 }

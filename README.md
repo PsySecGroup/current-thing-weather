@@ -4,40 +4,49 @@ Detects the Current Thing before it becomes the Current Thing.
 
 ## Install
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/PsySecGroup/current-thing-weather)
+First, you will need to **[install Sqlite](sqlite.md)**
 
-`npm i -S @psysecgroup/current-thing-weather` or `yarn add @psysecgroup/current-thing-weather`
-
-Then:
+Then, in your Node project, install the following package:
 
 ```bash
-cd current-thing-weather
+# npm
+npm i -S @psysecgroup/current-thing-weather
+
+#yarn
+yarn add @psysecgroup/current-thing-weather
+```
+
+Finally, perform the following inside of your Node project:
+
+```bash
+echo 'GDELT_PATH=data' >> .env
+echo 'GDELT_SQLITE_PATH=data/sqlite' >> .env
 ./update.sh
-node dist/index.js
 ````
 
-## Testing
+## Updating
 
-Add your tests to the [`tests`](tests) folder, then import them in the [`tests/index.ts`](tests/index.ts) file.
+To keep your news archive in sync, run the following command periodically:
 
-## CLI
+```bash
+./update.sh
+````
 
-### npm
+## Development
 
-- `npm run build`: Builds the source TypeScript to CommonJS, ESM, and IIFE JavaScript files in [`dist`](dist)
-- `npm run sb-watch`: Watches for changes for TypeScript files, builds the source on a change, then runs [`dist/index.js`](dist/index.js) (StackBlitz-friendly)
-- `npm run watch`: Watches for changes for TypeScript files, builds the source on a change, then runs [`dist/index.js`](dist/index.js) (Every other system)
-- `npm test`: Runs tests.
+### CLI
 
-### yarn
+* `npm start`: Runs the standalone Current Thing Detector.
+* `npm run dev`: Runs the source code and recompiles on code changes.
+* `npm run lint`: Checks if your code is throwing syntax errors.
+* `npm run test`: Runs tests on your code to make sure it's working.
+* `npm run build`: Builds your TypeScript to a single JavaScript distribution.
+* `npm run compile`: Lints, tests, and builds your JavaScript distribution.
 
-- `yarn build`: Builds the source TypeScript to CommonJS, ESM, and IIFE JavaScript files in [`dist`](dist)
-- `yarn sb-watch`: Watches for changes for TypeScript files, builds the source on a change, then runs [`dist/index.js`](dist/index.js) (StackBlitz-friendly)
-- `yarn watch`: Watches for changes for TypeScript files, builds the source on a change, then runs [`dist/index.js`](dist/index.js) (Every other system)
-- `yarn test`: Runs tests.
+### Questions
 
-### TODO
-
-* `tsup-node` is sketchy, find another way to compile TypeScript
-* Get all zip files in the `data` folder
-* Confirm threaded-sqlite-write is working
+* Do we throw all generated Sqlite files into one singular mega file?
+* Do we need a `threaded-sqlite-read`?
+* How can we test data veracity after the sqlite files are generated?
+* `threaded-sqlite-write`'s `startWriters`' doesn't appear to enjoy being concurrently called
+* `threaded-sqlite-write` needs to be able to access it's `dist/insert.js` without having to bring it to the project's `dist`
