@@ -196,7 +196,7 @@
 
 "@psysecgroup/threaded-sqlite-write@https://github.com/psysecgroup/threaded-sqlite-write":
   version "1.0.0"
-  resolved "https://github.com/psysecgroup/threaded-sqlite-write#b1a73f2f6e222856446f53d11a494f5314055aa4"
+  resolved "https://github.com/psysecgroup/threaded-sqlite-write#c6516fff22ff0d1b7e419f9ea11a2a41e3d43f55"
   dependencies:
     better-sqlite3 "^8.0.0"
     fs-extra "^10.1.0"
@@ -1051,9 +1051,9 @@ natural-compare@^1.4.0:
   integrity sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==
 
 node-abi@^3.3.0:
-  version "3.63.0"
-  resolved "https://registry.yarnpkg.com/node-abi/-/node-abi-3.63.0.tgz#9bfbe68b87357f8b508554608b323e9b1052d045"
-  integrity sha512-vAszCsOUrUxjGAmdnM/pq7gUgie0IRteCQMX6d4A534fQCR93EJU5qgzBvU6EkFfK27s0T3HEV3BOyJIr7OMYw==
+  version "3.65.0"
+  resolved "https://registry.yarnpkg.com/node-abi/-/node-abi-3.65.0.tgz#ca92d559388e1e9cab1680a18c1a18757cdac9d3"
+  integrity sha512-ThjYBfoDNr08AWx6hGaRbfPwxKV9kVzAzOzlLKbk2CuqXE2xnCh+cbAGnwM3t8Lq4v9rUB7VfondlkBckcJrVA==
   dependencies:
     semver "^7.3.5"
 

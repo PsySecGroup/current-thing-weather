@@ -25,7 +25,6 @@ async function main (directory = sourceDir) {
   }
 
   for (const target of targets) {
-    // const target = targets[0] // @TODO remove
     console.log(`Processing ${target}...`)
     const results = await extractAndProcessZip(target)
 
@@ -52,7 +51,6 @@ async function main (directory = sourceDir) {
     await save(outputDir, target)
     loadedZips[target] = true
     await writeJsonFile(loadedJsonPath, loadedZips)
-    process.exit()
   }
 }
 

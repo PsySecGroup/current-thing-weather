@@ -156,7 +156,7 @@ function processCsv (csvStream) {
         }
 
         source.events += 1
-        source.conflict += parseInt(data.GoldsteinScale) * -1
+        source.conflict += parseInt(data.GoldsteinScale || 0) * -1
       })
       .on('end', () => {
         const results = Object.values(urls)
