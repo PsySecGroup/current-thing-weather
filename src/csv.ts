@@ -8,6 +8,8 @@ const csvConfig = {
   headers: ['GLOBALEVENTID', 'SQLDATE', 'MonthYear', 'Year', 'FractionDate', 'Actor1Code', 'Actor1Name', 'Actor1CountryCode', 'Actor1KnownGroupCode', 'Actor1EthnicCode', 'Actor1Religion1Code', 'Actor1Religion2Code', 'Actor1Type1Code', 'Actor1Type2Code', 'Actor1Type3Code', 'Actor2Code', 'Actor2Name', 'Actor2CountryCode', 'Actor2KnownGroupCode', 'Actor2EthnicCode', 'Actor2Religion1Code', 'Actor2Religion2Code', 'Actor2Type1Code', 'Actor2Type2Code', 'Actor2Type3Code', 'IsRootEvent', 'EventCode', 'EventBaseCode', 'EventRootCode', 'QuadClass', 'GoldsteinScale', 'NumMentions', 'NumSources', 'NumArticles', 'AvgTone', 'Actor1Geo_Type', 'Actor1Geo_FullName', 'Actor1Geo_CountryCode', 'Actor1Geo_ADM1Code', 'Actor1Geo_Lat', 'Actor1Geo_Long', 'Actor1Geo_FeatureID', 'Actor2Geo_Type', 'Actor2Geo_FullName', 'Actor2Geo_CountryCode', 'Actor2Geo_ADM1Code', 'Actor2Geo_Lat', 'Actor2Geo_Long', 'Actor2Geo_FeatureID', 'ActionGeo_Type', 'ActionGeo_FullName', 'ActionGeo_CountryCode', 'ActionGeo_ADM1Code', 'ActionGeo_Lat', 'ActionGeo_Long', 'ActionGeo_FeatureID', 'DATEADDED', 'SOURCEURL']
 }
 
+let tempUrl = 0
+
 /**
  *
  */
@@ -24,7 +26,11 @@ export async function extractAndProcessZip (zipFilePath) {
 
     if (type === 'File' && fileName.endsWith('.csv')) {
       const csvResults = await processCsv(entry)
-      results.push(...csvResults)
+
+      for (const csvRow of csvResults) {
+        results.push(csvRow)
+      }
+      // results.push(csvResults)
     } else {
       entry.autodrain()
     }
@@ -60,9 +66,25 @@ function processCsv (csvStream) {
 
     csvStream
       .pipe(csv(csvConfig))
-      .on('data', (data) => { 
-        if (urls[data.SOURCEURL] === undefined) {
-          urls[data.SOURCEURL] = {
+      .on('data', (data) => {
+
+        const url = data.SOURCEURL || ''
+        const urlParts = url
+          .toLowerCase()
+          .replace(plusRegex, '-')
+          .split('/')
+        
+        let urlKey
+
+        if (url === '') {
+          urlKey = tempUrl
+          tempUrl += 1
+        } else {
+          urlKey = url
+        }
+
+        if (urls[urlKey] === undefined) {
+          urls[urlKey] = {
             year: parseInt(data.Year),
             month: parseInt(data.MonthYear.substring(4)),
             day: parseInt(data.SQLDATE.substring(6)),
@@ -70,26 +92,22 @@ function processCsv (csvStream) {
             events: 0,
             tone: parseFloat(data.AvgTone),
             domain: '',
-            url: data.SOURCEURL.replace(singleQuoteRegex, "''"),
+            url: url.replace(singleQuoteRegex, "''"),
             summary: '',
             entities: []          
           }
         }
 
-        const source = urls[data.SOURCEURL]
-
+        const source = urls[urlKey]
         source.entities = addEntities(data.Actor1Geo_FullName, source.entities)
         source.entities = addEntities(data.Actor2Geo_FullName, source.entities)
         source.entities = addEntities(data.Actor1Name, source.entities)
         source.entities = addEntities(data.Actor2Name, source.entities)
         source.entities = addEntities(data.ActionGeo_FullName, source.entities)
 
-        const urlParts = data.SOURCEURL
-          .toLowerCase()
-          .replace(plusRegex, '-')
-          .split('/')
-
-        source.domain = urlParts[2].replace('www.', '').replace(singleQuoteRegex, "''")
+        source.domain = url === ''
+          ? url
+          : urlParts[2].replace('www.', '').replace(singleQuoteRegex, "''")
 
         let summary = ''
 
@@ -165,6 +183,8 @@ function processCsv (csvStream) {
           result.entities = result.entities.join(',').replace(singleQuoteRegex, "''")
           return result
         })
+
+        console.log(results.length + ' records to save...')
 
         resolve(results)
       })
