@@ -107,7 +107,7 @@ function processCsv (csvStream) {
 
         source.domain = url === ''
           ? url
-          : urlParts[2].replace('www.', '').replace(singleQuoteRegex, "''")
+          : (urlParts[2] || urlParts[0]).replace('www.', '').replace(singleQuoteRegex, "''")
 
         let summary = ''
 
@@ -153,10 +153,10 @@ function processCsv (csvStream) {
             }
           }
 
-          summary = newSummary.join(' ').replace(singleQuoteRegex, "''")
+          summary = newSummary.join(' ')
         }
 
-        source.summary = summary
+        source.summary = summary.replace(singleQuoteRegex, "''")
 
         switch (data.QuadClass) {
           case '2':
