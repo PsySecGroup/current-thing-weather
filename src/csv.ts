@@ -1,4 +1,5 @@
 import { createReadStream } from 'fs'
+import { stat } from 'fs/promises'
 import unzipper from 'unzipper'
 import csv from 'csv-parser'
 import { isBadPart, singleQuoteRegex, plusRegex, minusRegex } from './text'
@@ -13,7 +14,24 @@ let tempUrl = 0
 /**
  *
  */
+export async function isFileEmpty(filePath) {
+  try {
+    const stats = await stat(filePath);
+    return stats.size === 0
+  } catch (error) {
+    console.error(`Error checking file size: ${error.message}`)
+    throw error
+  }
+}
+
+/**
+ *
+ */
 export async function extractAndProcessZip (zipFilePath) {
+  if (await isFileEmpty(zipFilePath)) {
+    return []
+  }
+
   const results = []
 
   // Create a stream to read the zip file
@@ -30,7 +48,6 @@ export async function extractAndProcessZip (zipFilePath) {
       for (const csvRow of csvResults) {
         results.push(csvRow)
       }
-      // results.push(csvResults)
     } else {
       entry.autodrain()
     }
@@ -67,7 +84,6 @@ function processCsv (csvStream) {
     csvStream
       .pipe(csv(csvConfig))
       .on('data', (data) => {
-
         const url = data.SOURCEURL || ''
         const urlParts = url
           .toLowerCase()
@@ -81,6 +97,10 @@ function processCsv (csvStream) {
           tempUrl += 1
         } else {
           urlKey = url
+        }
+
+        if(data.Year.trim() === '' || data.MonthYear.trim() === '') {
+          return
         }
 
         if (urls[urlKey] === undefined) {

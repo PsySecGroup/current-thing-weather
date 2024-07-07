@@ -1,7 +1,7 @@
 import { workerCount as WorkerCount, startWriters, enqueue as Enqueue } from '@psysecgroup/threaded-sqlite-write'
 import { getDates } from './text'
 import { readdir } from 'fs/promises'
-import { parse } from 'path'
+import { parse, join } from 'path'
 
 /**
  *
@@ -56,16 +56,50 @@ export async function save (directory, filename) {
 /**
  *
  */
+export async function findSqliteFiles(dir) {
+  const sqliteFiles = []
+
+  async function recurse(currentDir) {
+    const entries = await readdir(currentDir, { withFileTypes: true })
+
+    const promises = entries.map(async (entry) => {
+      const fullPath = join(currentDir, entry.name)
+
+      if (entry.isDirectory()) {
+        await recurse(fullPath)
+      } else if (entry.isFile() && entry.name.endsWith('.sqlite')) {
+        sqliteFiles.push(fullPath)
+      }
+    })
+
+    await Promise.all(promises)
+  }
+
+  await recurse(dir)
+  return sqliteFiles
+}
+
+/**
+ *
+ */
 export const consolidate = async (directory: string) => {
-  const files = await readdir(directory)
-  const dbFiles = files
-    .filter(file => file.endsWith('.db'))
-    // .map(file => join(directory, file))
+  const buckets = {}
+  const dbFiles = await findSqliteFiles(directory)
 
   for (const db of dbFiles) {
     const { name } = parse(db)
-    console.log(db, getDates(name))
+    const dates = getDates(name)
+    if (buckets[dates] === undefined) {
+      buckets[dates] = []
+    }
+
+    buckets[dates].push(db)
   }
+
+  Object.keys(buckets).forEach(key => {
+    // @TODO open each database and dump to the key
+    console.log(key, buckets[key].length)
+  })
 }
 
 export const workerCount = WorkerCount

@@ -6,46 +6,25 @@ export const minusRegex = /-/g
 const yearRegex = /^\d{4}$/
 const yearMonthRegex = /^\d{6}$/
 const yearMonthDayRegex = /^\d{8}$/
-const hyphenYearRegex = /^\d{4}-\d{4}$/
 
-// Helper function to check if a string is a valid date
-function isValidDate(date) {
-    return date instanceof Date && !isNaN(date);
-}
+/**
+ *
+ */
+export function getDates(filename) {
+  const numbers = filename.substring(0, filename.indexOf('.'))
 
-// Function to parse dates from extracted numbers
-export function getDates(numbers) {
-  const dates = []
+  let date
 
-  numbers.forEach(num => {
-    let date
+  if (yearRegex.test(numbers)) {
+    // YYYY
+    date = new Date(numbers)
+  } else if (yearMonthRegex.test(numbers)) {
+    // YYYYMM
+    date = new Date(numbers.substring(0, 4), numbers.substring(4, 6) - 1)
+  } else if (yearMonthDayRegex.test(numbers)) {
+    // YYYYMMDD
+    date = new Date(numbers.substring(0, 4), numbers.substring(4, 6) - 1, numbers.substring(6, 8))
+  }
 
-    if (yearRegex.test(num)) {
-      // YYYY
-      date = new Date(num)
-    } else if (yearMonthRegex.test(num)) {
-      // YYYYMM
-      date = new Date(num.substring(0, 4), num.substring(4, 6) - 1)
-    } else if (yearMonthDayRegex.test(num)) {
-      // YYYYMMDD
-      date = new Date(num.substring(0, 4), num.substring(4, 6) - 1, num.substring(6, 8))
-    } else if (hyphenYearRegex.test(num)) {
-      // YYYY-YYYY
-      const years = num.split('-')
-      const startDate = new Date(years[0])
-      const endDate = new Date(years[1])
-
-      if (isValidDate(startDate) && isValidDate(endDate)) {
-        dates.push({ startDate, endDate })
-      }
-
-      return // Skip to the next number
-    }
-
-    if (isValidDate(date)) {
-      dates.push(date)
-    }
-  })
-
-  return dates
+  return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`
 }

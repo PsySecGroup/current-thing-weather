@@ -196,7 +196,7 @@
 
 "@psysecgroup/threaded-sqlite-write@https://github.com/psysecgroup/threaded-sqlite-write":
   version "1.0.0"
-  resolved "https://github.com/psysecgroup/threaded-sqlite-write#c6516fff22ff0d1b7e419f9ea11a2a41e3d43f55"
+  resolved "https://github.com/psysecgroup/threaded-sqlite-write#6e77cdaac6c15f4ae6f47947bc5a759d66ba846e"
   dependencies:
     better-sqlite3 "^8.0.0"
     fs-extra "^10.1.0"

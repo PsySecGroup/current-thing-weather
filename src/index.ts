@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import { workerCount, save, enqueue } from './database'
+import { workerCount, save, enqueue, consolidate } from './database'
 import { extractAndProcessZip } from './csv'
 import { getFiles, readOrCreateJsonFile, writeJsonFile } from './files'
 
@@ -10,7 +10,7 @@ const outputDir = process.env.GDELT_SQLITE_PATH
 /**
  *
  */
-async function main (directory = sourceDir) {
+export async function makeDatabases (directory = sourceDir) {
   console.log('Gathering archives...')
   const loadedZips = await readOrCreateJsonFile(loadedJsonPath, '{}')
   const zips = await getFiles(directory, 'zip')
@@ -47,11 +47,24 @@ async function main (directory = sourceDir) {
       enqueue(row)
     }
 
-    console.log('Saving...')
-    await save(outputDir, target)
-    loadedZips[target] = true
-    await writeJsonFile(loadedJsonPath, loadedZips)
+    if (results.length > 0) {
+      console.log('Saving...')
+      await save(outputDir, target)
+      loadedZips[target] = true
+      await writeJsonFile(loadedJsonPath, loadedZips)
+    } else {
+      console.info('Skipping due to empty archive...')
+    }
   }
+
+  console.log('Complete Sqlite conversions!')
+}
+
+/**
+ *
+ */
+async function main (directory = sourceDir) {
+  await consolidate(directory + '/sqlite')
 }
 
 main()
