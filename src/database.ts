@@ -117,6 +117,8 @@ export const consolidate = async (directory: string) => {
       await exec(`(sqlite3 "${dbPath.replace(slashRegex, '\\')}" ".dump events" | sed -e 's/CREATE TABLE events /CREATE TABLE IF NOT EXISTS events /' | sqlite3 "${root}\\events.sqlite")`)
     }
   }
+
+  console.info('Consolidation complete')
 }
 
 export const workerCount = WorkerCount
