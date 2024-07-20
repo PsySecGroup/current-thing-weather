@@ -65,3 +65,12 @@ export const readOrCreateJsonFile = async (filePath: string, defaultContent) => 
     }
   }
 }
+
+export async function createDir (dirPath: string) {
+  try {
+    await fs.mkdir(dirPath, { recursive: true });
+    return true
+  } catch (err) {
+    console.error(`Error creating directory at ${dirPath}:`, err);
+  }
+}

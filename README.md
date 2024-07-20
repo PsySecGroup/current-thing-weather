@@ -45,9 +45,7 @@ To keep your news archive in sync, run the following command periodically:
 
 ### Questions
 
-* Do we throw all generated Sqlite files into one singular mega file?
-* Do we need a `threaded-sqlite-read`?
-* How can we test data veracity after the sqlite files are generated?
-* `threaded-sqlite-write`'s `startWriters`' doesn't appear to enjoy being concurrently called
+* Do we need a `threaded-sqlite-read`?  (Probably)
+  * We need a way to query the consolidated databases
 * `threaded-sqlite-write` needs to be able to access it's `dist/insert.js` without having to bring it to the project's `dist`
 * `threaded-sqlite-write` errors need to be surfaced better than `{ code: 'SQLITE_ERROR' }`

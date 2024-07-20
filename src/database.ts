@@ -2,6 +2,13 @@ import { workerCount as WorkerCount, startWriters, enqueue as Enqueue } from '@p
 import { getDates } from './text'
 import { readdir } from 'fs/promises'
 import { parse, join } from 'path'
+import { exec as Exec } from 'child_process'
+import { createDir } from './files'
+import util from 'util'
+
+export const exec = util.promisify(Exec)
+
+const slashRegex = /\//g
 
 /**
  *
@@ -96,10 +103,20 @@ export const consolidate = async (directory: string) => {
     buckets[dates].push(db)
   }
 
-  Object.keys(buckets).forEach(key => {
-    // @TODO open each database and dump to the key
-    console.log(key, buckets[key].length)
-  })
+  for (const dir of Object.keys(buckets)) {
+    const dbs = buckets[dir]
+    const root = (directory + '\\' + dir).replace(slashRegex, '\\')
+
+    console.log(`Building ${dir}...`)
+
+    await createDir(root)
+
+    await exec(`pushd "${root}" && touch events.sqlite && popd`)
+
+    for (const dbPath of dbs) {
+      await exec(`(sqlite3 "${dbPath.replace(slashRegex, '\\')}" ".dump events" | sed -e 's/CREATE TABLE events /CREATE TABLE IF NOT EXISTS events /' | sqlite3 "${root}\\events.sqlite")`)
+    }
+  }
 }
 
 export const workerCount = WorkerCount
